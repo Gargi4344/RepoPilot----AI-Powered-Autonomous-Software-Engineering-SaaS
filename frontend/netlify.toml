@@ -6,7 +6,7 @@
 # see frontend/src/api.ts. Update this once the backend has a real domain + HTTPS.
 [[redirects]]
   from = "/api/*"
-  to = "http://147.5.105.61/api/:splat"
+  to = "https://repopilot-api-gezu.onrender.com/api/:splat"
   status = 200
   force = true
 

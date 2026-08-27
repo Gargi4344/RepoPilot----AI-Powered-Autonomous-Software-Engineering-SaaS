@@ -122,12 +122,25 @@ def health() -> dict[str, str]:
     return {"status": "ok", "mode": "phase-2-human-gated-execution"}
 
 
+def _github_callback_redirect_uri() -> str:
+    """The redirect_uri registered with the GitHub OAuth App must be a URL the browser's own
+    top-level navigation can land on directly -- GitHub's redirect isn't proxied by anything
+    in front of this API, so it can never be this backend's own bare domain when the frontend
+    is served from a different origin (e.g. Netlify) that proxies /api/* to here. It has to be
+    the frontend's origin instead, so that landing request also flows through the same
+    same-origin proxy path as every other API call. That's what keeps the OAuth state cookie
+    and the final session cookie scoped to the one origin the browser actually talks to --
+    using request.url_for() here instead (this backend's own host) sets the cookie on a
+    different origin than the frontend ever calls, and the browser never sends it back."""
+    return f"{settings.frontend_origin}/api/v1/auth/github/callback"
+
+
 @app.get("/api/v1/auth/github/login")
-def github_login(request: Request) -> RedirectResponse:
+def github_login() -> RedirectResponse:
     if not settings.github_oauth_client_id:
         raise HTTPException(status_code=503, detail="GitHub OAuth is not configured on this server.")
     state = generate_state()
-    redirect_uri = str(request.url_for("github_callback"))
+    redirect_uri = _github_callback_redirect_uri()
     response = RedirectResponse(build_authorize_url(settings.github_oauth_client_id, redirect_uri, state))
     response.set_cookie(STATE_COOKIE, state, max_age=STATE_MAX_AGE_SECONDS, httponly=True, samesite="lax")
     return response
@@ -141,7 +154,7 @@ async def github_callback(request: Request, code: str, state: str) -> RedirectRe
     if not settings.github_oauth_client_id or not settings.github_oauth_client_secret:
         raise HTTPException(status_code=503, detail="GitHub OAuth is not configured on this server.")
 
-    redirect_uri = str(request.url_for("github_callback"))
+    redirect_uri = _github_callback_redirect_uri()
     try:
         user = await exchange_code_for_user(
             code=code,

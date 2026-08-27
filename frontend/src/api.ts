@@ -18,13 +18,17 @@ import type {
 
 const BASE = '/api/v1'
 
-// The OAuth login must hit the backend directly at the host registered as its GitHub OAuth
-// App callback -- going through a same-origin proxy (Vite's dev proxy, or Netlify's redirect
-// rule in production) would rewrite the Host header and break GitHub's exact-match check on
-// the redirect URI. VITE_API_ORIGIN is set at build time (see netlify.toml / .env) for
-// production; it defaults to the local dev backend when unset.
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || 'http://localhost:8000'
-export const GITHUB_LOGIN_URL = `${API_ORIGIN}/api/v1/auth/github/login`
+// Login must complete through the exact same origin every other API call uses (Netlify's
+// proxy rule in production, Vite's dev proxy locally) -- not the backend's own bare domain.
+// The session cookie GitHub's callback response sets is scoped to whichever origin the
+// browser's connection actually was when it received that Set-Cookie header. Hitting the
+// backend directly sets the cookie on the backend's own domain; every other call (including
+// the auth check that decides whether the app treats you as logged in) goes through the
+// proxied same-origin path instead, which then never sends that cookie back -- observed in
+// production as "GitHub sign-in completes but the app never recognizes it."
+export const GITHUB_LOGIN_URL = import.meta.env.PROD
+  ? `${BASE}/auth/github/login`
+  : 'http://localhost:8000/api/v1/auth/github/login'
 
 export class ApiError extends Error {
   status: number
