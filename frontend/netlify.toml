@@ -1,0 +1,18 @@
+[build]
+  publish = "dist"
+
+# Proxies API calls through Netlify's own infrastructure (not the browser), so the deployed
+# HTTPS site can talk to the backend over plain HTTP without hitting mixed-content blocking --
+# see frontend/src/api.ts. Update this once the backend has a real domain + HTTPS.
+[[redirects]]
+  from = "/api/*"
+  to = "http://147.5.105.61/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback -- client-side routes like /repositories or /runs/:id must serve index.html,
+# not a 404, on a direct load or refresh.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

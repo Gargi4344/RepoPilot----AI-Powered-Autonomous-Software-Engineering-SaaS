@@ -1,0 +1,41 @@
+[project]
+name = "pr-engineer"
+version = "0.1.0"
+description = "Safe, PR-first foundation for an autonomous GitHub engineering service."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1.0",
+  "pydantic>=2.10,<3.0",
+  "uvicorn[standard]>=0.32,<1.0",
+  "ollama>=0.4,<1.0",
+  "google-genai>=2.0,<3.0",
+  "anthropic>=0.40,<1.0",
+  "httpx>=0.28,<1.0",
+  "python-dotenv>=1.0,<2.0",
+  "itsdangerous>=2.2,<3.0",
+  "cryptography>=42.0,<51.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3,<9.0", "ruff>=0.8,<1.0"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "--basetemp=./.pytest-work"
+cache_dir = "./.pytest-cache"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Worktrees of arbitrary target repos live under data/ at runtime -- never part of this
+# project's own code, so they must never be linted as if they were.
+extend-exclude = ["data", ".pytest-work"]
+
+[tool.ruff.lint.flake8-bugbear]
+# `Depends(...)` in a default argument is the standard FastAPI dependency-injection
+# pattern, not the mutable-default-argument bug B008 otherwise flags.
+extend-immutable-calls = ["fastapi.Depends"]
